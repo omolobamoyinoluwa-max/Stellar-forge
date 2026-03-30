@@ -29,6 +29,9 @@ export const NavBar: React.FC<NavBarProps> = ({ onHelpClick, isAdmin = false }) 
         <NavLink to="/burn" className={getLinkClass}>
           {t('nav.burn')}
         </NavLink>
+        <NavLink to="/metadata" className={getLinkClass}>
+          {t('nav.metadata', 'Metadata')}
+        </NavLink>
         <NavLink to="/tokens" className={getLinkClass}>
           {t('nav.tokens')}
         </NavLink>

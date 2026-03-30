@@ -25,6 +25,7 @@ import { TokenDetail } from './components/TokenDetail'
 import { TokenExplorer } from './components/TokenExplorer'
 import { FAQ } from './components/FAQ'
 import { AdminPanel } from './components/AdminPanel'
+import { MetadataForm } from './components/MetadataForm'
 import { useFactoryState } from './hooks/useFactoryState'
 import { isFactoryConfigured } from './config/env'
 import ErrorBoundary from './components/ErrorBoundary'
@@ -234,6 +235,19 @@ function AppContent() {
                     <ErrorBoundary>
                       <TokenExplorer />
                     </ErrorBoundary>
+                  }
+                />
+                <Route
+                  path="/metadata"
+                  element={
+                    <ProtectedRoute>
+                      <ErrorBoundary>
+                        <div className="max-w-lg mx-auto">
+                          <h2 className="text-xl font-semibold text-gray-900 dark:text-white mb-4">Set Token Metadata</h2>
+                          <MetadataForm />
+                        </div>
+                      </ErrorBoundary>
+                    </ProtectedRoute>
                   }
                 />
                 <Route
