@@ -261,25 +261,32 @@ impl TokenFactory {
     ) -> Result<Address, Error> {
         // Validate token name: non-empty and at most 32 characters
         if name.len() == 0 || name.len() > 32 {
+            state.locked = false;
             return Err(Error::InvalidTokenParams);
         }
 
         // Validate token symbol: non-empty and at most 12 characters
         if symbol.len() == 0 || symbol.len() > 12 {
+            state.locked = false;
             return Err(Error::InvalidTokenParams);
         }
 
         // Validate decimals: must be between 0 and 18 inclusive
         if decimals > 18 {
-            return Err(Error::InvalidDecimals);
+            state.locked = false;
+            return Err(Error::InvalidParameters);
         }
 
         if fee_payment < state.base_fee {
+            state.locked = false;
             return Err(Error::InsufficientFee);
         }
 
         // Fail fast if token count would overflow
-        state.token_count.checked_add(1).ok_or(Error::ArithmeticOverflow)?;
+        if state.token_count.checked_add(1).is_none() {
+            state.locked = false;
+            return Err(Error::ArithmeticOverflow);
+        }
 
         // Transfer fee to treasury using the stored fee token
         Self::distribute_fee(env, state, &creator, fee_payment)?;
@@ -613,7 +620,7 @@ impl TokenFactory {
         if let Some(index) = env.storage().instance().get::<_, u32>(&DataKey::TokenIndex(token_address.clone())) {
             let info: TokenInfo = env.storage().instance().get(&DataKey::TokenInfo(index)).ok_or(Error::TokenNotFound)?;
             if !info.burn_enabled {
-                return Err(Error::BurnNotEnabled);
+                return Err(Error::Unauthorized);
             }
         }
 

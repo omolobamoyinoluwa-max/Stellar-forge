@@ -163,7 +163,21 @@ fn test_create_token_invalid_decimals() {
         &String::from_str(&s.env, "MTK"),
         &19, &0_u128, &1_000,
     );
-    assert_eq!(result, Err(Ok(Error::InvalidDecimals)));
+    assert_eq!(result, Err(Ok(Error::InvalidParameters)));
+}
+
+#[test]
+fn test_create_token_invalid_decimals_large() {
+    let s = Setup::new();
+    let creator = Address::generate(&s.env);
+    s.fund(&creator, 1_000);
+    let result = s.client.try_create_token(
+        &creator, &s.salt(0), &s.dummy_hash(),
+        &String::from_str(&s.env, "MyToken"),
+        &String::from_str(&s.env, "MTK"),
+        &255, &0_u128, &1_000,
+    );
+    assert_eq!(result, Err(Ok(Error::InvalidParameters)));
 }
 
 #[test]
@@ -474,7 +488,7 @@ fn test_burn_disabled() {
     StellarAssetClient::new(&s.env, &token_addr).mint(&burner, &100);
     assert_eq!(
         s.client.try_burn(&token_addr, &burner, &100),
-        Err(Ok(Error::BurnNotEnabled))
+        Err(Ok(Error::Unauthorized))
     );
 }
 
