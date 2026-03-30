@@ -34,7 +34,7 @@ impl Setup {
             .register_stellar_asset_contract_v2(admin.clone())
             .address();
 
-        client.initialize(&admin, &treasury, &fee_token, &1_000, &500);
+        client.initialize(&admin, &treasury, &fee_token, dummy_hash(), &1_000, &500);
 
         Setup { env, client, admin, treasury, fee_token }
     }
@@ -150,11 +150,12 @@ fn test_create_token_insufficient_fee() {
     let s = Setup::new();
     let creator = Address::generate(&s.env);
     let result = s.client.try_create_token(
-        &creator, &s.salt(0), &s.dummy_hash(),
+        &creator, &s.salt(0),
         &String::from_str(&s.env, "MyToken"),
         &String::from_str(&s.env, "MTK"),
         &7, &0_u128, &999,
     );
+
     assert_eq!(result, Err(Ok(Error::InsufficientFee)));
 }
 
@@ -164,7 +165,7 @@ fn test_create_token_blocked_when_paused() {
     s.client.pause(&s.admin);
     let creator = Address::generate(&s.env);
     let result = s.client.try_create_token(
-        &creator, &s.salt(0), &s.dummy_hash(),
+        &creator, &s.salt(0),
         &String::from_str(&s.env, "T"),
         &String::from_str(&s.env, "T"),
         &7, &0_u128, &1_000,
@@ -178,7 +179,7 @@ fn test_create_token_invalid_decimals() {
     let creator = Address::generate(&s.env);
     s.fund(&creator, 1_000);
     let result = s.client.try_create_token(
-        &creator, &s.salt(0), &s.dummy_hash(),
+        &creator, &s.salt(0),
         &String::from_str(&s.env, "MyToken"),
         &String::from_str(&s.env, "MTK"),
         &19, &0_u128, &1_000,
@@ -797,7 +798,6 @@ fn test_fee_goes_to_treasury_when_no_split() {
 fn batch_param(s: &Setup, n: u8, name: &str, symbol: &str) -> BatchTokenParams {
     BatchTokenParams {
         salt: BytesN::from_array(&s.env, &[n; 32]),
-        token_wasm_hash: BytesN::from_array(&s.env, &[0u8; 32]),
         name: String::from_str(&s.env, name),
         symbol: String::from_str(&s.env, symbol),
         decimals: 7,

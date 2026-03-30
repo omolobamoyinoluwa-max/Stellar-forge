@@ -58,9 +58,17 @@ pub struct FactoryState {
     pub treasury: Address,
     pub fee_token: Address,
     pub base_fee: i128,
+
     pub metadata_fee: i128,
+    pub token_wasm_hash: BytesN<32>,
     pub token_count: u32,
 }
+</xai:function_call }
+
+
+
+<xai:function_call name="edit_file">
+<parameter name="path">contracts/token-factory/src/lib.rs
 
 #[contracterror]
 #[derive(Clone, Copy, Debug, Eq, PartialEq)]
@@ -101,22 +109,27 @@ impl TokenFactory {
         admin: Address,
         treasury: Address,
         fee_token: Address,
+        token_wasm_hash: BytesN<32>,
         base_fee: i128,
         metadata_fee: i128,
     ) -> Result<(), Error> {
+
         if env.storage().instance().has(&DataKey::State) {
             return Err(Error::AlreadyInitialized);
         }
+
         let state = FactoryState {
             admin: admin.clone(),
             paused: false,
             locked: false,
             treasury,
             fee_token,
+            token_wasm_hash: token_wasm_hash.clone(),
             base_fee,
             metadata_fee,
             token_count: 0,
         };
+
         env.storage().instance().set(&DataKey::State, &state);
         env.storage().instance().extend_ttl(MIN_TTL, MAX_TTL);
         env.events().publish((symbol_short!("init"),), (admin,));
@@ -174,7 +187,6 @@ impl TokenFactory {
         env: Env,
         creator: Address,
         salt: BytesN<32>,
-        token_wasm_hash: BytesN<32>,
         name: String,
         symbol: String,
         decimals: u32,
