@@ -53,9 +53,8 @@ export const TokenMetadata: React.FC<TokenMetadataProps> = ({
         }
         setState({ status: 'resolved', imageUrl: data.image, description: data.description })
       })
-      .catch((err: unknown) => {
+      .catch((_err: unknown) => {
         if (cancelled) return
-        console.error('[TokenMetadata] Failed to fetch metadata:', err)
         setState({ status: 'error' })
       })
 
