@@ -1,3 +1,4 @@
+import React from 'react'
 import { describe, it, expect, vi, beforeEach } from 'vitest'
 import { render, screen, waitFor } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
@@ -59,7 +60,7 @@ const renderWithProviders = async (
   vi.mocked(useTransaction).mockReturnValue({
     execute: mockExecute,
     status: txStatus as any,
-    txHash: null,
+    result: null,
     error: null,
     reset: vi.fn(),
   })
@@ -71,7 +72,6 @@ const renderWithProviders = async (
           address: walletAddress,
           isConnected,
           balance: '100',
-          network: 'testnet',
         },
         connect: vi.fn(),
         disconnect: vi.fn(),

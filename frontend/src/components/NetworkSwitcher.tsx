@@ -1,5 +1,5 @@
+import React, { useState, useRef, useEffect } from 'react'
 import { Button } from './UI'
-import { useState, useRef, useEffect } from 'react'
 import { useTranslation } from 'react-i18next'
 import { useNetwork, type Network } from '../context/NetworkContext'
 

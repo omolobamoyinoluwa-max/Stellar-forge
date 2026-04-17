@@ -1,13 +1,11 @@
-import React, { useEffect } from 'react'
+import React, { useEffect, useState } from 'react'
 import { ToastContainer, WalletButton } from './components/UI'
 import './App.css'
 import { useTranslation } from 'react-i18next'
-import { useDarkMode } from './hooks/useDarkMode'
 import { BrowserRouter, Routes, Route, Navigate, useLocation } from 'react-router-dom'
-import { trackEvent, trackPageView } from './services/analytics'
-import { AnalyticsOptOut } from './components/AnalyticsOptOut'
+import { trackPageView } from './services/analytics'
 import { WalletProvider } from './context/WalletContext'
-import { ToastProvider, useToast } from './context/ToastContext'
+import { ToastProvider } from './context/ToastContext'
 import { NetworkProvider } from './context/NetworkContext'
 import { StellarProvider } from './context/StellarContext'
 import { NetworkSwitcher } from './components/NetworkSwitcher'
@@ -23,7 +21,6 @@ import { BurnForm } from './components/BurnForm'
 import { TokenDashboard } from './components/TokenDashboard'
 import { TokenDetail } from './components/TokenDetail'
 import { TokenExplorer } from './components/TokenExplorer'
-import { FAQ } from './components/FAQ'
 import { AdminPanel } from './components/AdminPanel'
 import { MetadataForm } from './components/MetadataForm'
 import { useFactoryState } from './hooks/useFactoryState'
@@ -31,7 +28,6 @@ import { isFactoryConfigured } from './config/env'
 import ErrorBoundary from './components/ErrorBoundary'
 import { TosProvider } from './context/TosContext'
 import { ThemeProvider, useTheme } from './context/ThemeContext'
-import { useState } from 'react'
 
 const ProtectedRoute: React.FC<{ children: React.ReactElement }> = ({ children }) => {
   const { wallet } = useWallet()
@@ -40,10 +36,8 @@ const ProtectedRoute: React.FC<{ children: React.ReactElement }> = ({ children }
 }
 
 function AppContent() {
-  const { wallet, connect, disconnect, isConnecting, error, isInstalled } = useWallet()
-  const { addToast } = useToast()
+  const { wallet, error } = useWallet()
   const { t } = useTranslation()
-  const { isDarkMode, toggleDarkMode } = useDarkMode()
   const [showOnboarding, setShowOnboarding] = useState(false)
   const { state: factoryState } = useFactoryState()
   const location = useLocation()
@@ -56,23 +50,6 @@ function AppContent() {
   useEffect(() => {
     trackPageView(location.pathname)
   }, [location.pathname])
-
-  const handleConnect = async () => {
-    try {
-      await connect()
-      if (!error) {
-        addToast(t('wallet.connected'), 'success')
-        trackEvent('wallet_connected')
-      }
-    } catch {
-      addToast(t('wallet.connectFailed'), 'error')
-    }
-  }
-
-  const handleDisconnect = () => {
-    disconnect()
-    addToast(t('wallet.disconnected'), 'info')
-  }
 
   return (
     <>

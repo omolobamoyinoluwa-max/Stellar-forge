@@ -1,3 +1,4 @@
+import React from 'react'
 import { useNetwork } from '../context/NetworkContext'
 import type { Network } from '../context/NetworkContext'
 

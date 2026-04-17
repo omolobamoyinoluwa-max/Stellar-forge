@@ -1,3 +1,4 @@
+import React from 'react'
 import { useWalletContext } from '../context/WalletContext'
 import { useNetwork } from '../context/NetworkContext'
 import { formatXLM } from '../utils/formatting'

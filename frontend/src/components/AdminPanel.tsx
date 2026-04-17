@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback, useRef } from 'react'
+import React, { useState, useEffect, useCallback, useRef } from 'react'
 import { Input, Button, ConfirmModal } from './UI'
 import { useWalletContext } from '../context/WalletContext'
 import { useStellarContext } from '../context/StellarContext'

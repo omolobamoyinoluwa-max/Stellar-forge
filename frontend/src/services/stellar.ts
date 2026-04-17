@@ -751,6 +751,53 @@ export class StellarService {
     return []
   }
 
+  // ── getTokensByCreator ───────────────────────────────────────────────────────
+
+  /**
+   * Fetch all tokens created by a given address by reading factory events.
+   */
+  async getTokensByCreator(creator: string): Promise<TokenInfo[]> {
+    const contractId = STELLAR_CONFIG.factoryContractId
+    if (!contractId) throw new Error('Factory contract ID is not configured')
+
+    const { events } = await this.getContractEvents(contractId, 100)
+    const addresses = events
+      .filter((e) => e.type === 'created' && e.data.creator === creator)
+      .map((e) => e.data.tokenAddress)
+      .filter((addr): addr is string => !!addr)
+
+    const results = await Promise.allSettled(
+      addresses.map((addr) => this.getTokenInfoByAddress(addr)),
+    )
+    return results
+      .filter((r): r is PromiseFulfilledResult<TokenInfo> => r.status === 'fulfilled')
+      .map((r) => r.value)
+  }
+
+  // ── getTokenInfoByAddress ────────────────────────────────────────────────────
+
+  /**
+   * Get token info by contract address (derived from factory events).
+   * Returns a TokenInfo with the address embedded in the creator field if not found.
+   */
+  async getTokenInfoByAddress(tokenAddress: string): Promise<TokenInfo> {
+    const contractId = STELLAR_CONFIG.factoryContractId
+    if (!contractId) throw new Error('Factory contract ID is not configured')
+
+    const { events } = await this.getContractEvents(contractId, 100)
+    const createdEvent = events.find(
+      (e) => e.type === 'created' && e.data.tokenAddress === tokenAddress,
+    )
+
+    return {
+      name: createdEvent?.data.name ?? tokenAddress,
+      symbol: createdEvent?.data.symbol ?? '',
+      decimals: 7,
+      creator: createdEvent?.data.creator ?? '',
+      createdAt: createdEvent?.timestamp ?? 0,
+    }
+  }
+
   /**
    * Get all events for a specific token address.
    * Filters factory events to only those related to the given token.

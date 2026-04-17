@@ -69,12 +69,6 @@ pub struct FactoryState {
     /// incremental upgrades without data loss.
     pub schema_version: u32,
 }
-</xai:function_call }
-
-
-
-<xai:function_call name="edit_file">
-<parameter name="path">contracts/token-factory/src/lib.rs
 
 #[contracterror]
 #[derive(Clone, Copy, Debug, Eq, PartialEq)]
@@ -138,6 +132,7 @@ impl TokenFactory {
         };
 
         env.storage().instance().set(&DataKey::State, &state);
+        env.storage().instance().set(&symbol_short!("sv"), &CURRENT_SCHEMA_VERSION);
         env.storage().instance().extend_ttl(MIN_TTL, MAX_TTL);
         env.events().publish((symbol_short!("factory"), symbol_short!("init")), (admin,));
         Ok(())
@@ -551,11 +546,13 @@ impl TokenFactory {
         }
 
         if let Some(cap) = token_info.max_supply {
-            let current = token::TokenClient::new(&env, &token_address).total_supply();
+            let supply_key = (&token_address, symbol_short!("supply"));
+            let current: i128 = env.storage().instance().get(&supply_key).unwrap_or(0i128);
             let new_total = current.checked_add(amount).ok_or(Error::ArithmeticOverflow)?;
             if new_total > cap {
                 return Err(Error::MaxSupplyExceeded);
             }
+            env.storage().instance().set(&supply_key, &new_total);
         }
 
         // Transfer fee from admin to treasury using the dedicated fee_token
@@ -731,7 +728,21 @@ impl TokenFactory {
         Ok(())
     }
 
-    pub fn migrate(_env: Env, _admin: Address) -> Result<(), Error> {
+    pub fn migrate(env: Env, admin: Address) -> Result<(), Error> {
+        admin.require_auth();
+        let state = Self::load_state(&env)?;
+        if state.admin != admin {
+            return Err(Error::Unauthorized);
+        }
+        let sv_key = symbol_short!("sv");
+        let on_chain_version: u32 = env.storage().instance().get(&sv_key).unwrap_or(0);
+        if on_chain_version < CURRENT_SCHEMA_VERSION {
+            // Version 1: ensure schema_version field is set
+            let mut s = state;
+            s.schema_version = CURRENT_SCHEMA_VERSION;
+            Self::save_state(&env, &s);
+            env.storage().instance().set(&sv_key, &CURRENT_SCHEMA_VERSION);
+        }
         Ok(())
     }
 
@@ -761,7 +772,7 @@ impl TokenFactory {
         state.admin = new_admin.clone();
         Self::save_state(&env, &state);
         env.events()
-            .publish((symbol_short!("factory"), symbol_short!("admin_update")), (current_admin, new_admin));
+            .publish((symbol_short!("factory"), symbol_short!("adm_upd")), (current_admin, new_admin));
         Ok(())
     }
 

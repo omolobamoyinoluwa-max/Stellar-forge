@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import React, { useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import { useToast } from '../context/ToastContext'
 import { useStellarContext } from '../context/StellarContext'
@@ -20,7 +20,6 @@ export const CreateToken: React.FC = () => {
   const { addToast } = useToast()
   const { stellarService } = useStellarContext()
   const { refreshBalance } = useWalletContext()
-  const { network } = useNetwork()
 
   const [isDeploying, setIsDeploying] = useState(false)
   const [deployedToken, setDeployedToken] = useState<DeployedToken | null>(null)

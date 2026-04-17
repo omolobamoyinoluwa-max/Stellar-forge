@@ -55,14 +55,14 @@ export const TokenExplorer: React.FC = () => {
       .getContractEvents(STELLAR_CONFIG.factoryContractId || '', 1000)
       .then(({ events }) => {
         const tokenCreatedEvents = events
-          .filter((e) => e.type === 'token_created')
+          .filter((e) => e.type === 'created')
           .sort((a, b) => a.ledger - b.ledger) // Sort by creation order
 
         const promises: Promise<TokenWithMetadata | null>[] = []
         for (let i = startIndex; i < endIndex; i++) {
           const event = tokenCreatedEvents[i]
           if (event?.data.tokenAddress) {
-            promises.push(loadTokenByAddress(event.data.tokenAddress, i))
+            promises.push(loadTokenByAddress(event.data.tokenAddress))
           }
         }
 
@@ -78,7 +78,7 @@ export const TokenExplorer: React.FC = () => {
 
   const loadTokenByAddress = async (address: string): Promise<TokenWithMetadata | null> => {
     try {
-      const info = await stellarService.getTokenInfo(address)
+      const info = await stellarService.getTokenInfoByAddress(address)
 
       let metadata: IPFSMetadata | null = null
       if (info.metadataUri) {
@@ -128,7 +128,7 @@ export const TokenExplorer: React.FC = () => {
           1000,
         )
         const tokenCreatedEvents = events
-          .filter((e) => e.type === 'token_created')
+          .filter((e) => e.type === 'created')
           .sort((a, b) => a.ledger - b.ledger)
 
         const event = tokenCreatedEvents[index]
@@ -137,7 +137,7 @@ export const TokenExplorer: React.FC = () => {
           return
         }
 
-        const result = await loadTokenByAddress(event.data.tokenAddress, index)
+        const result = await loadTokenByAddress(event.data.tokenAddress)
         if (result) {
           setSearchResult(result)
         } else {

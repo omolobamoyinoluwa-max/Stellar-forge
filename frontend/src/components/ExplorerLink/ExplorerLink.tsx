@@ -1,3 +1,4 @@
+import React from 'react'
 import { stellarExplorerUrl } from '../../utils/stellarExplorer'
 import { truncateAddress } from '../../utils/truncateAddress'
 import type { ExplorerType, Network } from '../../utils/stellarExplorer'

@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback, useRef } from 'react'
+import React, { useState, useEffect, useCallback, useRef } from 'react'
 import { useForm } from 'react-hook-form'
 import { Input, Button, ConfirmModal, InsufficientBalanceWarning, Select } from './UI'
 import { useDebounce } from '../hooks/useDebounce'

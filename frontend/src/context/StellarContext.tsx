@@ -8,7 +8,7 @@ interface StellarContextValue {
   ipfsService: IPFSService
 }
 
-const StellarContext = createContext<StellarContextValue | null>(null)
+export const StellarContext = createContext<StellarContextValue | null>(null)
 
 export function StellarProvider({ children }: { children: ReactNode }) {
   const { network } = useNetwork()

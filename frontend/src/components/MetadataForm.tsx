@@ -1,4 +1,4 @@
-import { useState, useRef } from 'react'
+import React, { useState, useRef } from 'react'
 import { Button, ConfirmModal, InsufficientBalanceWarning, ProgressIndicator } from './UI'
 import type { ProgressStep } from './UI'
 import { Input } from './UI/Input'

@@ -37,14 +37,14 @@ async function fetchAllTokens(creator?: string): Promise<TokenInfo[]> {
   const addresses = [
     ...new Set(
       events
-        .filter((e) => e.type === 'token_created')
+        .filter((e) => e.type === 'created')
         .map((e) => e.data.tokenAddress)
         .filter((addr): addr is string => !!addr),
     ),
   ]
 
   const results = await Promise.allSettled(
-    addresses.map((addr) => stellarService.getTokenInfo(addr)),
+    addresses.map((addr) => stellarService.getTokenInfoByAddress(addr)),
   )
 
   return results

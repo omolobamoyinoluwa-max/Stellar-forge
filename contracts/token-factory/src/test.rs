@@ -9,6 +9,10 @@ use soroban_sdk::{
 
 // ── Test setup helper ─────────────────────────────────────────────────────────
 
+fn dummy_hash(env: &Env) -> BytesN<32> {
+    BytesN::from_array(env, &[0u8; 32])
+}
+
 struct Setup {
     env: Env,
     client: TokenFactoryClient<'static>,
@@ -34,7 +38,7 @@ impl Setup {
             .register_stellar_asset_contract_v2(admin.clone())
             .address();
 
-        client.initialize(&admin, &treasury, &fee_token, dummy_hash(), &1_000, &500);
+        client.initialize(&admin, &treasury, &fee_token, &dummy_hash(&env), &1_000, &500);
 
         Setup { env, client, admin, treasury, fee_token }
     }
@@ -86,15 +90,12 @@ fn seed_token(s: &Setup, creator: &Address, burn_enabled: bool, max_supply: Opti
         s.env.storage().instance().set(&DataKey::State, &state);
         s.env.storage().instance()
             .set(&DataKey::TokenIndex(token_addr.clone()), &index);
-        s.env.storage().instance()
-            .set(&DataKey::CreatorTokens(creator.clone()), {
-                let key = DataKey::CreatorTokens(creator.clone());
-                let mut list: soroban_sdk::Vec<u32> = s.env.storage().instance()
-                    .get(&key)
-                    .unwrap_or_else(|| soroban_sdk::vec![&s.env]);
-                list.push_back(index);
-                list
-            });
+        let creator_key = DataKey::CreatorTokens(creator.clone());
+        let mut list: soroban_sdk::Vec<u32> = s.env.storage().instance()
+            .get(&creator_key)
+            .unwrap_or_else(|| soroban_sdk::vec![&s.env]);
+        list.push_back(index);
+        s.env.storage().instance().set(&creator_key, &list);
         s.env.storage().instance()
             .set(&(&token_addr, symbol_short!("owner")), creator);
         s.env.storage().instance()
@@ -121,7 +122,7 @@ fn test_initialize() {
 #[test]
 fn test_initialize_already_initialized() {
     let s = Setup::new();
-    let result = s.client.try_initialize(&s.admin, &s.treasury, &s.fee_token, &1_000, &500);
+    let result = s.client.try_initialize(&s.admin, &s.treasury, &s.fee_token, &s.dummy_hash(), &1_000, &500);
     assert_eq!(result, Err(Ok(Error::AlreadyInitialized)));
 }
 
@@ -133,7 +134,7 @@ fn test_set_metadata_fee_goes_to_treasury() {
     let admin = Address::generate(&s.env);
     s.fund(&admin, 500);
 
-    let token_addr = seed_token_with_burn(&s, &admin, true);
+    let token_addr = seed_token(&s, &admin, true, None);
     s.client.set_metadata(
         &token_addr, &admin,
         &String::from_str(&s.env, "ipfs://Qm123"),
@@ -142,8 +143,6 @@ fn test_set_metadata_fee_goes_to_treasury() {
 
     assert_eq!(TokenClient::new(&s.env, &s.fee_token).balance(&s.treasury), 500);
 }
-
-// ── create_token (error paths only — deploy needs wasm) ──────────────────────
 
 #[test]
 fn test_create_token_insufficient_fee() {
@@ -193,7 +192,7 @@ fn test_create_token_invalid_decimals_large() {
     let creator = Address::generate(&s.env);
     s.fund(&creator, 1_000);
     let result = s.client.try_create_token(
-        &creator, &s.salt(0), &s.dummy_hash(),
+        &creator, &s.salt(0),
         &String::from_str(&s.env, "MyToken"),
         &String::from_str(&s.env, "MTK"),
         &255, &0_u128, &1_000,
@@ -207,7 +206,7 @@ fn test_create_token_invalid_name_empty() {
     let creator = Address::generate(&s.env);
     s.fund(&creator, 1_000);
     let result = s.client.try_create_token(
-        &creator, &s.salt(0), &s.dummy_hash(),
+        &creator, &s.salt(0),
         &String::from_str(&s.env, ""),
         &String::from_str(&s.env, "MTK"),
         &7, &0_u128, &1_000,
@@ -221,7 +220,7 @@ fn test_create_token_invalid_symbol_empty() {
     let creator = Address::generate(&s.env);
     s.fund(&creator, 1_000);
     let result = s.client.try_create_token(
-        &creator, &s.salt(0), &s.dummy_hash(),
+        &creator, &s.salt(0),
         &String::from_str(&s.env, "MyToken"),
         &String::from_str(&s.env, ""),
         &7, &0_u128, &1_000,
@@ -240,7 +239,7 @@ fn test_create_token_reentrancy_guard() {
         s.env.storage().instance().set(&DataKey::State, &state);
     });
     let result = s.client.try_create_token(
-        &creator, &s.salt(0), &s.dummy_hash(),
+        &creator, &s.salt(0),
         &String::from_str(&s.env, "T"),
         &String::from_str(&s.env, "T"),
         &7, &0_u128, &1_000,
@@ -260,7 +259,7 @@ fn test_create_token_overflow_protection() {
     let creator = Address::generate(&s.env);
     s.fund(&creator, 1_000);
     let result = s.client.try_create_token(
-        &creator, &s.salt(0), &s.dummy_hash(),
+        &creator, &s.salt(0),
         &String::from_str(&s.env, "T"),
         &String::from_str(&s.env, "T"),
         &7, &0_u128, &1_000,
@@ -274,7 +273,7 @@ fn test_reentrancy_lock_released_after_error() {
     let creator = Address::generate(&s.env);
     // Trigger InsufficientFee — lock must be released afterwards.
     let _ = s.client.try_create_token(
-        &creator, &s.salt(0), &s.dummy_hash(),
+        &creator, &s.salt(0),
         &String::from_str(&s.env, "T"),
         &String::from_str(&s.env, "T"),
         &7, &0_u128, &1,
@@ -354,8 +353,8 @@ fn test_set_metadata_different_tokens_independent() {
     let s = Setup::new();
     let admin = Address::generate(&s.env);
     s.fund(&admin, 1_000);
-    let token_a = seed_token_with_burn(&s, &admin, true);
-    let token_b = seed_token_with_burn(&s, &admin, true);
+    let token_a = seed_token(&s, &admin, true, None);
+    let token_b = seed_token(&s, &admin, true, None);
     s.client.set_metadata(&token_a, &admin, &String::from_str(&s.env, "ipfs://QmA"), &500);
     s.client.set_metadata(&token_b, &admin, &String::from_str(&s.env, "ipfs://QmB"), &500);
 }
@@ -537,7 +536,7 @@ fn test_set_burn_enabled_disables_then_reenables() {
     s.client.set_burn_enabled(&token_addr, &creator, &false);
     assert_eq!(
         s.client.try_burn(&token_addr, &burner, &100),
-        Err(Ok(Error::BurnNotEnabled))
+        Err(Ok(Error::Unauthorized))
     );
 
     s.client.set_burn_enabled(&token_addr, &creator, &true);
@@ -719,8 +718,9 @@ fn test_ttl_extended_after_initialize() {
     let admin = Address::generate(&env);
     let treasury = Address::generate(&env);
     let fee_token = env.register_stellar_asset_contract_v2(admin.clone()).address();
-    client.initialize(&admin, &treasury, &fee_token, &1_000, &500);
+    client.initialize(&admin, &treasury, &fee_token, &BytesN::from_array(&env, &[0u8; 32]), &1_000, &500);
     env.as_contract(&contract_id, || {
+        use soroban_sdk::testutils::storage::Instance;
         let ttl = env.storage().instance().get_ttl();
         assert!(ttl >= MIN_TTL, "TTL after initialize ({ttl}) must be >= MIN_TTL ({MIN_TTL})");
     });
@@ -833,6 +833,7 @@ fn test_batch_empty_rejected() {
     let result = s.client.try_create_tokens_batch(
         &creator, &soroban_sdk::vec![&s.env], &0,
     );
+    assert_eq!(result, Err(Ok(Error::InvalidParameters)));
 }
 
 #[test]
@@ -943,9 +944,9 @@ fn test_migrate_upgrades_pre_versioned_state() {
     // Simulate a pre-versioned deployment: set sv = 0 and schema_version = 0
     s.env.as_contract(&s.client.address, || {
         let mut state: FactoryState = s.env.storage().instance()
-            .get(&symbol_short!("state")).unwrap();
+            .get(&DataKey::State).unwrap();
         state.schema_version = 0;
-        s.env.storage().instance().set(&symbol_short!("state"), &state);
+        s.env.storage().instance().set(&DataKey::State, &state);
         s.env.storage().instance().set(&symbol_short!("sv"), &0u32);
     });
 

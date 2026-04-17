@@ -1,4 +1,4 @@
-import { useState, useMemo, useCallback, memo } from 'react'
+import React, { useState, useMemo, useCallback, memo } from 'react'
 import type { SortOrder } from '../types'
 import { applyFilters } from '../utils/tokenFilters'
 import { useDebounce } from '../hooks/useDebounce'

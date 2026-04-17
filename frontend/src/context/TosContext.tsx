@@ -1,4 +1,4 @@
-import { createContext, useCallback, useContext, useState } from 'react'
+import React, { createContext, useCallback, useContext, useState } from 'react'
 import { useLocalStorage } from '../hooks/useLocalStorage'
 import { TermsModal } from '../components/UI/TermsModal'
 

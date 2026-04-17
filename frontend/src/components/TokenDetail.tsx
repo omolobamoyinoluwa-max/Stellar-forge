@@ -1,4 +1,4 @@
-import { useEffect, useState, useCallback } from 'react'
+import React, { useEffect, useState, useCallback } from 'react'
 import { useParams, Link } from 'react-router-dom'
 import { useTranslation } from 'react-i18next'
 import { useStellarContext } from '../context/StellarContext'
@@ -64,7 +64,7 @@ export const TokenDetail: React.FC = () => {
     setError(null)
 
     stellarService
-      .getTokenInfo(address)
+      .getTokenInfoByAddress(address)
       .then(async (info) => {
         setToken(info as TokenInfo)
         if (info.metadataUri) {

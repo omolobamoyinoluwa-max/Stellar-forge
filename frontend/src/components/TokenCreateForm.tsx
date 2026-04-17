@@ -1,4 +1,4 @@
-import { useState, useCallback, useRef } from 'react'
+import React, { useState, useCallback, useRef } from 'react'
 import { Input, Button, MainnetConfirmationModal, ConfirmModal, ProgressIndicator, InsufficientBalanceWarning } from './UI'
 import type { ProgressStep } from './UI'
 import { useMainnetConfirmation } from '../hooks/useMainnetConfirmation'
