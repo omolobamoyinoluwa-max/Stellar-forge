@@ -13,6 +13,16 @@ export interface TokenMetadata {
   image: string // ipfs:// URI
 }
 
+function isTokenMetadata(value: unknown): value is TokenMetadata {
+  if (typeof value !== 'object' || value === null) return false
+  const obj = value as Record<string, unknown>
+  return (
+    typeof obj.name === 'string' &&
+    typeof obj.description === 'string' &&
+    typeof obj.image === 'string'
+  )
+}
+
 function validateConfig(): void {
   if (!IPFS_CONFIG.apiKey || !IPFS_CONFIG.apiSecret) {
     throw new IPFSConfigError(
@@ -94,11 +104,20 @@ export class IPFSService {
       )
     }
 
+    let parsed: unknown
     try {
-      return (await response.json()) as TokenMetadata
+      parsed = await response.json()
     } catch {
       throw new IPFSUploadError('Metadata response is not valid JSON.')
     }
+
+    if (!isTokenMetadata(parsed)) {
+      throw new IPFSUploadError(
+        'Metadata response is missing required fields (name, description, image).',
+      )
+    }
+
+    return { name: parsed.name, description: parsed.description, image: parsed.image }
   }
 
   // ── Private helpers ──────────────────────────────────────────────────────────
