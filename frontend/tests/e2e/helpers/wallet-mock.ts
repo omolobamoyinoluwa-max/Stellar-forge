@@ -20,9 +20,14 @@ declare global {
  * @stellar/freighter-api v6.0.1 uses two mechanisms:
  *   1. window.freighter presence check (isConnected shortcircuits to truthy when set)
  *   2. postMessage protocol (FREIGHTER_EXTERNAL_MSG_REQUEST / RESPONSE) for getAddress,
- *      signTransaction, REQUEST_NETWORK_DETAILS, etc.
+ *      signTransaction, etc.
  *
- * We intercept both so the app sees a fully connected wallet without the real extension.
+ * Key design: WatchWalletChanges.fetchInfo() calls REQUEST_PUBLIC_KEY then
+ * REQUEST_NETWORK_DETAILS in sequence. We intentionally do NOT respond to
+ * REQUEST_NETWORK_DETAILS — that makes the watcher hang at the second await and
+ * never fire its auto-connect callback, so "Connect Wallet" remains visible.
+ * Explicit connect() only sends REQUEST_PUBLIC_KEY, so it still works.
+ *
  * ToS is pre-accepted via localStorage so the modal does not block connect().
  */
 export async function mockFreighter(page: Page, address: string) {
@@ -67,19 +72,10 @@ export async function mockFreighter(page: Page, address: string) {
           window.postMessage({ ...base, publicKey: mockAddress }, '*')
           break
         case 'REQUEST_NETWORK_DETAILS':
-          window.postMessage(
-            {
-              ...base,
-              networkDetails: {
-                network: 'STANDALONE',
-                networkName: 'Standalone',
-                networkUrl: 'http://localhost:8000',
-                networkPassphrase: 'Standalone Network ; February 2017',
-                sorobanRpcUrl: 'http://localhost:8000/soroban/rpc',
-              },
-            },
-            '*',
-          )
+          // Intentionally no response: WatchWalletChanges.fetchInfo() awaits _() after A().
+          // Without a response _() hangs forever, so the watcher callback never fires and
+          // the wallet does not auto-connect on mount.  Explicit connect() is unaffected
+          // because getAddress() only sends REQUEST_PUBLIC_KEY, not REQUEST_NETWORK_DETAILS.
           break
         case 'REQUEST_ALLOWED_STATUS':
           window.postMessage({ ...base, isAllowed: true }, '*')
