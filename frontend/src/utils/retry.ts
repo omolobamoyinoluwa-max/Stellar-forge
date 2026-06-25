@@ -16,7 +16,7 @@ export class HttpError extends Error {
   constructor(
     public status: number,
     message: string,
-    public retryAfter?: number
+    public retryAfter?: number,
   ) {
     super(message)
     this.name = 'HttpError'
@@ -132,9 +132,16 @@ export async function withRetry<T>(fn: () => Promise<T>, options: RetryOptions =
         break
       }
 
-      // Exponential backoff before next attempt
-      const delayMs = baseDelayMs * Math.pow(2, attempt - 1)
-      void error // consumed by caller on final throw
+      // Honor the server's Retry-After header when present, otherwise fall
+      // back to exponential backoff.
+      const delayMs =
+        error instanceof HttpError && error.retryAfter !== undefined
+          ? error.retryAfter * 1000
+          : baseDelayMs * Math.pow(2, attempt - 1)
+
+      if (import.meta.env.DEV) {
+        console.warn(`[withRetry] attempt ${attempt} failed, retrying in ${delayMs}ms`, error)
+      }
 
       await new Promise((resolve) => setTimeout(resolve, delayMs))
     }
@@ -143,4 +150,3 @@ export async function withRetry<T>(fn: () => Promise<T>, options: RetryOptions =
   // All attempts failed
   throw lastError
 }
-

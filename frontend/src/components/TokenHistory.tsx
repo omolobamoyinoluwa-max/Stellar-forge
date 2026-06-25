@@ -32,7 +32,7 @@ export const TokenHistory: React.FC<TokenHistoryProps> = ({ tokenAddress }) => {
       const result = await stellarService.getTokenEvents(
         tokenAddress,
         20,
-        isLoadMore ? cursor ?? undefined : undefined,
+        isLoadMore ? (cursor ?? undefined) : undefined,
       )
 
       if (isLoadMore) {

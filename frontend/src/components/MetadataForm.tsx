@@ -313,10 +313,14 @@ export const MetadataForm: React.FC<MetadataFormProps> = ({ initialTokenAddress 
 
         {/* Description */}
         <div>
-          <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+          <label
+            htmlFor="metadata-description"
+            className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1"
+          >
             Description
           </label>
           <textarea
+            id="metadata-description"
             value={description}
             onChange={(e) => setDescription(e.target.value)}
             placeholder="Describe your token…"
