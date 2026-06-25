@@ -24,3 +24,9 @@ Thumbs.db
 # Build output
 build/
 out/
+
+# Contributor scratch / push-helper scripts
+*.bat
+*.ps1
+quick-pr.sh
+push-to-fork.sh
