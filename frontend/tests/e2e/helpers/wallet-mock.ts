@@ -1,4 +1,4 @@
-import { Page } from '@playwright/test';
+import { Page } from '@playwright/test'
 
 /**
  * Mocks the Freighter wallet for E2E tests.
