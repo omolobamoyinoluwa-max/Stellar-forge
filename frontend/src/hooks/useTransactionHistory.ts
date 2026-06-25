@@ -17,6 +17,7 @@ interface UseTransactionHistoryOptions {
   issuer?: string;
   contractIds?: string[];
   pageSize?: number;
+  pollIntervalMs?: number;
 }
 
 export function useTransactionHistory(
@@ -28,10 +29,14 @@ export function useTransactionHistory(
   const [error, setError] = useState<string | null>(null);
   const [hasMore, setHasMore] = useState(true);
   const [page, setPage] = useState(1);
+  const [lastUpdated, setLastUpdated] = useState<Date | null>(null);
   const cacheRef = useRef<{ [key: string]: TransactionHistoryItem[] }>({});
   const debounceRef = useRef<number | null>(null);
+  const pollRef = useRef<number | null>(null);
+  const isMountedRef = useRef(true);
 
   const pageSize = options.pageSize || 10;
+  const pollIntervalMs = options.pollIntervalMs ?? 30_000;
 
   const fetchTransactions = useCallback(
     async (reset = false) => {
@@ -46,6 +51,7 @@ export function useTransactionHistory(
           );
           setHasMore(cacheRef.current[cacheKey].length === pageSize);
           setLoading(false);
+          setLastUpdated(new Date());
           return;
         }
         const url = `https://horizon.stellar.org/accounts/${publicKey}/operations?order=desc&limit=${pageSize}&cursor=`;
@@ -58,6 +64,7 @@ export function useTransactionHistory(
         cacheRef.current[cacheKey] = items;
         setTransactions((prev: TransactionHistoryItem[]) => (reset ? items : [...prev, ...items]));
         setHasMore(items.length === pageSize);
+        setLastUpdated(new Date());
       } catch (e: any) {
         setError(e.message || 'Unknown error');
       } finally {
@@ -86,11 +93,37 @@ export function useTransactionHistory(
     // eslint-disable-next-line
   }, [page]);
 
+  // Polling: re-fetch the first page every pollIntervalMs
+  useEffect(() => {
+    isMountedRef.current = true;
+    const id = setInterval(() => {
+      if (!publicKey || !isMountedRef.current) return;
+      if (page === 1) {
+        cacheRef.current = {};
+        fetchTransactions(true);
+      }
+    }, pollIntervalMs);
+    pollRef.current = id;
+    return () => {
+      isMountedRef.current = false;
+      clearInterval(id);
+    };
+    // eslint-disable-next-line
+  }, [publicKey, pollIntervalMs]);
+
   const loadMore = useCallback(() => {
     if (!loading && hasMore) setPage((p: number) => p + 1);
   }, [loading, hasMore]);
 
-  return { transactions, loading, error, hasMore, loadMore };
+  const refresh = useCallback(() => {
+    cacheRef.current = {};
+    setPage(1);
+    setTransactions([]);
+    fetchTransactions(true);
+    // eslint-disable-next-line
+  }, [publicKey, pageSize, options]);
+
+  return { transactions, loading, error, hasMore, loadMore, lastUpdated, refresh };
 }
 
 function parseOperation(op: any, options: UseTransactionHistoryOptions): TransactionHistoryItem | null {
