@@ -30,8 +30,7 @@ export class ErrorBoundary extends Component<Props, State> {
         <p>An unexpected error occurred. Our team has been notified.</p>
         <button onClick={() => window.location.reload()}>Reload page</button>
         <p>
-          Need help?{' '}
-          <a href="mailto:support@stellarforge.app">Contact support</a>
+          Need help? <a href="mailto:support@stellarforge.app">Contact support</a>
         </p>
       </div>
     )

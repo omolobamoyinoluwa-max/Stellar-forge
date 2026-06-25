@@ -36,6 +36,9 @@ describe('alerts.ts', () => {
     const err = new Error('revert')
     captureContractFailure('deployToken', err, '0xabc')
     expect(mockSetTag).toHaveBeenCalledWith('category', 'contract')
-    expect(mockCaptureException).toHaveBeenCalledWith(err, { method: 'deployToken', txHash: '0xabc' })
+    expect(mockCaptureException).toHaveBeenCalledWith(err, {
+      method: 'deployToken',
+      txHash: '0xabc',
+    })
   })
 })

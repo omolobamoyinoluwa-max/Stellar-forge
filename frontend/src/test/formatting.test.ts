@@ -163,7 +163,7 @@ describe('round-trip conversion', () => {
   it('xlmToStroops(stroopsToXLM(x)) === x', () => {
     const testValues = [10000000, 5000000, 1000000, 100000, 10000, 1000, 100, 10, 1]
 
-    testValues.forEach(value => {
+    testValues.forEach((value) => {
       expect(xlmToStroops(stroopsToXLM(value))).toBe(value)
     })
   })

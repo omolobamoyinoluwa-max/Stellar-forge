@@ -99,10 +99,7 @@ export const MetadataUploadForm: React.FC<MetadataUploadFormProps> = ({
       setUploadProgress(0)
     } catch (error) {
       console.error('Upload error:', error)
-      addToast(
-        error instanceof Error ? error.message : 'Failed to upload metadata',
-        'error',
-      )
+      addToast(error instanceof Error ? error.message : 'Failed to upload metadata', 'error')
     } finally {
       setIsUploading(false)
     }
@@ -139,7 +136,10 @@ export const MetadataUploadForm: React.FC<MetadataUploadFormProps> = ({
       </div>
 
       <div>
-        <label htmlFor="description" className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+        <label
+          htmlFor="description"
+          className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1"
+        >
           {t('tokenForm.descriptionLabel')}
         </label>
         <textarea
@@ -169,9 +169,7 @@ export const MetadataUploadForm: React.FC<MetadataUploadFormProps> = ({
               className="max-w-32 max-h-32 object-contain border border-gray-300 dark:border-gray-600 rounded-md"
             />
             <div className="text-center">
-              <p className="text-sm text-gray-600 dark:text-gray-400">
-                {imageFile?.name}
-              </p>
+              <p className="text-sm text-gray-600 dark:text-gray-400">{imageFile?.name}</p>
               <p className="text-sm text-gray-600 dark:text-gray-400">
                 {(imageFile?.size || 0) / 1024 / 1024 < 1
                   ? `${Math.round((imageFile?.size || 0) / 1024)} KB`
@@ -204,11 +202,7 @@ export const MetadataUploadForm: React.FC<MetadataUploadFormProps> = ({
         </div>
       )}
 
-      <Button
-        type="submit"
-        disabled={!imageFile || isUploading || isLoading}
-        className="w-full"
-      >
+      <Button type="submit" disabled={!imageFile || isUploading || isLoading} className="w-full">
         {isUploading ? 'Uploading...' : 'Upload Metadata'}
       </Button>
     </form>

@@ -18,8 +18,6 @@ const { valid, missing } = validateEnv()
 
 createRoot(document.getElementById('root')!).render(
   <StrictMode>
-    <ErrorBoundary>
-      {valid ? <App /> : <MisconfigurationScreen missing={missing} />}
-    </ErrorBoundary>
+    <ErrorBoundary>{valid ? <App /> : <MisconfigurationScreen missing={missing} />}</ErrorBoundary>
   </StrictMode>,
 )

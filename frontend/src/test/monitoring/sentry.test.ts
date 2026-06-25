@@ -8,9 +8,7 @@ vi.mock('@sentry/react', () => ({
   captureMessage: vi.fn(),
   setUser: vi.fn(),
   setTag: vi.fn(),
-  withScope: vi.fn((cb: (scope: { setExtras: () => void }) => void) =>
-    cb({ setExtras: vi.fn() }),
-  ),
+  withScope: vi.fn((cb: (scope: { setExtras: () => void }) => void) => cb({ setExtras: vi.fn() })),
   withProfiler: vi.fn((c) => c),
   browserTracingIntegration: vi.fn(),
   replayIntegration: vi.fn(),

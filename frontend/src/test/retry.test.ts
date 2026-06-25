@@ -128,4 +128,3 @@ describe('withRetry', () => {
     expect(consoleSpy).not.toHaveBeenCalled()
   })
 })
-

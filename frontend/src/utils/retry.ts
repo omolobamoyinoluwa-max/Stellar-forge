@@ -16,7 +16,7 @@ export class HttpError extends Error {
   constructor(
     public status: number,
     message: string,
-    public retryAfter?: number
+    public retryAfter?: number,
   ) {
     super(message)
     this.name = 'HttpError'
@@ -143,4 +143,3 @@ export async function withRetry<T>(fn: () => Promise<T>, options: RetryOptions =
   // All attempts failed
   throw lastError
 }
-
