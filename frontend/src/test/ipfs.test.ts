@@ -492,7 +492,11 @@ describe('IPFSService', () => {
         'fetch',
         vi.fn().mockImplementation(async (url: string) => {
           calledUrl = url
-          return { ok: true, status: 200, json: async () => ({}) }
+          return {
+            ok: true,
+            status: 200,
+            json: async () => ({ name: 'T', description: 'D', image: 'ipfs://QmImg' }),
+          }
         }),
       )
 
@@ -535,6 +539,99 @@ describe('IPFSService', () => {
           json: async () => {
             throw new SyntaxError('Unexpected token')
           },
+        }),
+      )
+
+      await expect(service.getMetadata('ipfs://QmCID')).rejects.toBeInstanceOf(IPFSUploadError)
+    })
+
+    it('throws IPFSUploadError when metadata is missing name field', async () => {
+      vi.stubGlobal(
+        'fetch',
+        vi.fn().mockResolvedValue({
+          ok: true,
+          status: 200,
+          json: async () => ({ description: 'A token', image: 'ipfs://QmImg' }),
+        }),
+      )
+
+      await expect(service.getMetadata('ipfs://QmCID')).rejects.toBeInstanceOf(IPFSUploadError)
+    })
+
+    it('throws IPFSUploadError when metadata is missing description field', async () => {
+      vi.stubGlobal(
+        'fetch',
+        vi.fn().mockResolvedValue({
+          ok: true,
+          status: 200,
+          json: async () => ({ name: 'MyToken', image: 'ipfs://QmImg' }),
+        }),
+      )
+
+      await expect(service.getMetadata('ipfs://QmCID')).rejects.toBeInstanceOf(IPFSUploadError)
+    })
+
+    it('throws IPFSUploadError when metadata is missing image field', async () => {
+      vi.stubGlobal(
+        'fetch',
+        vi.fn().mockResolvedValue({
+          ok: true,
+          status: 200,
+          json: async () => ({ name: 'MyToken', description: 'A token' }),
+        }),
+      )
+
+      await expect(service.getMetadata('ipfs://QmCID')).rejects.toBeInstanceOf(IPFSUploadError)
+    })
+
+    it('throws IPFSUploadError when metadata fields have wrong types', async () => {
+      vi.stubGlobal(
+        'fetch',
+        vi.fn().mockResolvedValue({
+          ok: true,
+          status: 200,
+          json: async () => ({ name: 42, description: true, image: null }),
+        }),
+      )
+
+      await expect(service.getMetadata('ipfs://QmCID')).rejects.toBeInstanceOf(IPFSUploadError)
+    })
+
+    it('strips unexpected extra fields from the returned metadata', async () => {
+      const raw = {
+        name: 'MyToken',
+        description: 'A token',
+        image: 'ipfs://QmImg',
+        maliciousField: '<script>alert(1)</script>',
+        extra: { nested: 'data' },
+      }
+      vi.stubGlobal(
+        'fetch',
+        vi.fn().mockResolvedValue({ ok: true, status: 200, json: async () => raw }),
+      )
+
+      const result = await service.getMetadata('ipfs://QmCID')
+      expect(result).toEqual({ name: 'MyToken', description: 'A token', image: 'ipfs://QmImg' })
+      expect(result).not.toHaveProperty('maliciousField')
+      expect(result).not.toHaveProperty('extra')
+    })
+
+    it('throws IPFSUploadError when gateway returns an empty object', async () => {
+      vi.stubGlobal(
+        'fetch',
+        vi.fn().mockResolvedValue({ ok: true, status: 200, json: async () => ({}) }),
+      )
+
+      await expect(service.getMetadata('ipfs://QmCID')).rejects.toBeInstanceOf(IPFSUploadError)
+    })
+
+    it('throws IPFSUploadError when gateway returns a non-object (array)', async () => {
+      vi.stubGlobal(
+        'fetch',
+        vi.fn().mockResolvedValue({
+          ok: true,
+          status: 200,
+          json: async () => ['name', 'description', 'image'],
         }),
       )
 
