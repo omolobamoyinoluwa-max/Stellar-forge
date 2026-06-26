@@ -812,24 +812,69 @@ export class StellarService {
   // ── getTokensByCreator ───────────────────────────────────────────────────────
 
   /**
-   * Fetch all tokens created by a given address by reading factory events.
+   * Fetch a paginated slice of tokens created by `creator`.
+   *
+   * This calls the contract's `get_tokens_by_creator` view function with the
+   * supplied `offset` and `limit`, then resolves each returned index to a
+   * full `TokenInfo` via `get_token_info`. Failed index lookups are skipped
+   * (the page may end up smaller than `limit` when one token's metadata is
+   * temporarily unavailable).
+   *
+   * The contract caps the `limit` it will service per call to keep responses
+   * below Stellar ledger entry size limits, so callers should treat responses
+   * shorter than `limit` as "end of available data" and stop iterating.
    */
-  async getTokensByCreator(creator: string): Promise<TokenInfo[]> {
+  async getTokensByCreator(
+    creator: string,
+    offset: number,
+    limit: number,
+  ): Promise<TokenInfo[]> {
     const contractId = STELLAR_CONFIG.factoryContractId
     if (!contractId) throw new Error('Factory contract ID is not configured')
 
-    const { events } = await this.getContractEvents(contractId, 100)
-    const addresses = events
-      .filter((e) => e.type === 'created' && e.data.creator === creator)
-      .map((e) => e.data.tokenAddress)
-      .filter((addr): addr is string => !!addr)
+    const sourceAddress = walletService.getConnectedAddress()
+    if (!sourceAddress) throw new Error('Wallet not connected')
 
-    const results = await Promise.allSettled(
-      addresses.map((addr) => this.getTokenInfoByAddress(addr)),
-    )
-    return results
-      .filter((r): r is PromiseFulfilledResult<TokenInfo> => r.status === 'fulfilled')
-      .map((r) => r.value)
+    try {
+      const server = getRpcServer(this.network)
+      const indicesRetval = await callView(
+        server,
+        contractId,
+        'get_tokens_by_creator',
+        [
+          new Address(creator).toScVal(),
+          nativeToScVal(offset, { type: 'u32' }),
+          nativeToScVal(limit, { type: 'u32' }),
+        ],
+        sourceAddress,
+        this.network,
+      )
+
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      const native = scValToNative(indicesRetval) as any
+      const indices: number[] = Array.isArray(native)
+        ? native.map((v: unknown) => Number(v))
+        : []
+
+      if (indices.length === 0) return []
+
+      const results = await Promise.allSettled(
+        indices.map((i) => this.getTokenInfo(i)),
+      )
+      return results
+        .filter((r): r is PromiseFulfilledResult<TokenInfo> => r.status === 'fulfilled')
+        .map((r) => r.value)
+    } catch (err) {
+      const appErr = toAppError(err)
+      const factoryContractId = STELLAR_CONFIG.factoryContractId ?? 'unknown'
+      captureContractError(err instanceof Error ? err : new Error(String(err)), {
+        network: this.network,
+        contractId: factoryContractId,
+        functionName: 'getTokensByCreator',
+        params: { creator, offset, limit },
+      })
+      throw new Error(appErr.message)
+    }
   }
 
   // ── getTokenInfoByAddress ────────────────────────────────────────────────────

@@ -91,9 +91,9 @@ export class StellarService {
     return impl.getAllTokens()
   }
 
-  async getTokensByCreator(creator: string) {
+  async getTokensByCreator(creator: string, offset: number, limit: number) {
     const impl = await this.getImpl()
-    return impl.getTokensByCreator(creator)
+    return impl.getTokensByCreator(creator, offset, limit)
   }
 
   async getTokenInfoByAddress(tokenAddress: string) {
