@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from 'react'
-import { ToastContainer, WalletButton } from './components/UI'
+import { ToastContainer, WalletButton, SkeletonCard, SkeletonTokenCard, TokenDetailSkeleton } from './components/UI'
 import './App.css'
 import { useTranslation } from 'react-i18next'
 import { BrowserRouter, Routes, Route, Navigate, useLocation } from 'react-router-dom'
@@ -18,13 +18,20 @@ import { Home } from './components/Home'
 import { CreateToken } from './components/CreateToken'
 import { MintForm } from './components/MintForm'
 import { BurnForm } from './components/BurnForm'
-import { TokenDashboard } from './components/TokenDashboard'
-import { TokenDetail } from './components/TokenDetail'
 import { TokenExplorer } from './components/TokenExplorer'
 import { AdminPanel } from './components/AdminPanel'
 import { MetadataForm } from './components/MetadataForm'
-import { Manage } from './components/Manage'
 import { NotFound } from './components/NotFound'
+
+const TokenDashboard = React.lazy(() =>
+  import('./components/TokenDashboard').then((m) => ({ default: m.TokenDashboard })),
+)
+const TokenDetail = React.lazy(() =>
+  import('./components/TokenDetail').then((m) => ({ default: m.TokenDetail })),
+)
+const Manage = React.lazy(() =>
+  import('./components/Manage').then((m) => ({ default: m.Manage })),
+)
 import { useFactoryState } from './hooks/useFactoryState'
 import { isFactoryConfigured } from './config/env'
 import ErrorBoundary from './components/ErrorBoundary'
@@ -76,11 +83,24 @@ const RouteErrorFallback: React.FC<RouteErrorFallbackProps> = ({
   </div>
 )
 
-const RouteBoundary: React.FC<{ routeName: string; children: React.ReactNode }> = ({
+const TokenDashboardFallback = () => (
+  <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4" aria-busy="true" aria-label="Loading tokens">
+    {Array.from({ length: 6 }).map((_, i) => (
+      <SkeletonTokenCard key={i} />
+    ))}
+  </div>
+)
+
+const RouteBoundary: React.FC<{ routeName: string; fallback?: React.ReactNode; children: React.ReactNode }> = ({
   routeName,
+  fallback,
   children,
 }) => (
-  <ErrorBoundary fallback={<RouteErrorFallback routeName={routeName} />}>{children}</ErrorBoundary>
+  <ErrorBoundary fallback={<RouteErrorFallback routeName={routeName} />}>
+    <React.Suspense fallback={fallback || <SkeletonCard />}>
+      {children}
+    </React.Suspense>
+  </ErrorBoundary>
 )
 
 function AppContent() {
@@ -241,114 +261,132 @@ function AppContent() {
                     <RouteBoundary routeName="Create Token">
                       <CreateToken />
                     </RouteBoundary>
-                  </ProtectedRoute>
-                }
-              />
-              <Route
-                path="/mint"
-                element={
-                  <ProtectedRoute>
-                    <RouteBoundary routeName="Mint">
-                      <MintForm />
+                  }
+                />
+                <Route
+                  path="/create"
+                  element={
+                    <ProtectedRoute>
+                      <RouteBoundary routeName="Create Token">
+                        <CreateToken />
+                      </RouteBoundary>
+                    </ProtectedRoute>
+                  }
+                />
+                <Route
+                  path="/mint"
+                  element={
+                    <ProtectedRoute>
+                      <RouteBoundary routeName="Mint">
+                        <MintForm />
+                      </RouteBoundary>
+                    </ProtectedRoute>
+                  }
+                />
+                <Route
+                  path="/burn"
+                  element={
+                    <ProtectedRoute>
+                      <RouteBoundary routeName="Burn">
+                        <BurnForm />
+                      </RouteBoundary>
+                    </ProtectedRoute>
+                  }
+                />
+                <Route
+                  path="/tokens"
+                  element={
+                    <ProtectedRoute>
+                      <RouteBoundary routeName="Tokens" fallback={<TokenDashboardFallback />}>
+                        <TokenDashboard />
+                      </RouteBoundary>
+                    </ProtectedRoute>
+                  }
+                />
+                <Route
+                  path="/tokens/:address"
+                  element={
+                    <ProtectedRoute>
+                      <RouteBoundary routeName="Token Detail" fallback={<TokenDetailSkeleton />}>
+                        <TokenDetail />
+                      </RouteBoundary>
+                    </ProtectedRoute>
+                  }
+                />
+                <Route
+                  path="/token/:address"
+                  element={
+                    <ProtectedRoute>
+                      <RouteBoundary routeName="Token Detail" fallback={<TokenDetailSkeleton />}>
+                        <TokenDetail />
+                      </RouteBoundary>
+                    </ProtectedRoute>
+                  }
+                />
+                <Route
+                  path="/explorer"
+                  element={
+                    <RouteBoundary routeName="Explorer">
+                      <TokenExplorer />
                     </RouteBoundary>
-                  </ProtectedRoute>
-                }
-              />
-              <Route
-                path="/burn"
-                element={
-                  <ProtectedRoute>
-                    <RouteBoundary routeName="Burn">
-                      <BurnForm />
-                    </RouteBoundary>
-                  </ProtectedRoute>
-                }
-              />
-              <Route
-                path="/tokens"
-                element={
-                  <ProtectedRoute>
-                    <RouteBoundary routeName="Tokens">
-                      <TokenDashboard />
-                    </RouteBoundary>
-                  </ProtectedRoute>
-                }
-              />
-              <Route
-                path="/tokens/:address"
-                element={
-                  <ProtectedRoute>
-                    <RouteBoundary routeName="Token Detail">
-                      <TokenDetail />
-                    </RouteBoundary>
-                  </ProtectedRoute>
-                }
-              />
-              {/* Public deep-link route — no wallet required so refresh works */}
-              <Route
-                path="/token/:address"
-                element={
-                  <RouteBoundary routeName="Token Detail">
-                    <TokenDetail />
-                  </RouteBoundary>
-                }
-              />
-              <Route
-                path="/explorer"
-                element={
-                  <RouteBoundary routeName="Explorer">
-                    <TokenExplorer />
-                  </RouteBoundary>
-                }
-              />
-              <Route
-                path="/metadata"
-                element={
-                  <ProtectedRoute>
-                    <RouteBoundary routeName="Metadata">
-                      <div className="max-w-lg mx-auto">
-                        <h2 className="text-xl font-semibold text-gray-900 dark:text-white mb-4">
-                          Set Token Metadata
-                        </h2>
-                        <MetadataForm />
-                      </div>
-                    </RouteBoundary>
-                  </ProtectedRoute>
-                }
-              />
-              <Route
-                path="/admin"
-                element={
-                  <ProtectedRoute>
-                    <RouteBoundary routeName="Admin Panel">
-                      <AdminPanel />
-                    </RouteBoundary>
-                  </ProtectedRoute>
-                }
-              />
-              <Route
-                path="/dashboard"
-                element={
-                  <ProtectedRoute>
-                    <RouteBoundary routeName="Dashboard">
-                      <TokenDashboard />
-                    </RouteBoundary>
-                  </ProtectedRoute>
-                }
-              />
-              <Route
-                path="/manage"
-                element={
-                  <ProtectedRoute>
-                    <RouteBoundary routeName="Manage">
-                      <Manage />
-                    </RouteBoundary>
-                  </ProtectedRoute>
-                }
-              />
-              <Route path="*" element={<NotFound />} />
-            </Routes>
-          </div>
+                  }
+                />
+                <Route
+                  path="/metadata"
+                  element={
+                    <ProtectedRoute>
+                      <RouteBoundary routeName="Metadata">
+                        <div className="max-w-lg mx-auto">
+                          <h2 className="text-xl font-semibold text-gray-900 dark:text-white mb-4">Set Token Metadata</h2>
+                          <MetadataForm />
+                        </div>
+                      </RouteBoundary>
+                    </ProtectedRoute>
+                  }
+                />
+                <Route
+                  path="/admin"
+                  element={
+                    <ProtectedRoute>
+                      <RouteBoundary routeName="Admin Panel">
+                        <AdminPanel />
+                      </RouteBoundary>
+                    </ProtectedRoute>
+                  }
+                />
+                <Route
+                  path="/dashboard"
+                  element={
+                    <ProtectedRoute>
+                      <RouteBoundary routeName="Dashboard" fallback={<TokenDashboardFallback />}>
+                        <TokenDashboard />
+                      </RouteBoundary>
+                    </ProtectedRoute>
+                  }
+                />
+                <Route
+                  path="/token/:address"
+                  element={
+                    <ProtectedRoute>
+                      <RouteBoundary routeName="Token Detail" fallback={<TokenDetailSkeleton />}>
+                        <TokenDetail />
+                      </RouteBoundary>
+                    </ProtectedRoute>
+                  }
+                />
+                <Route
+                  path="/manage"
+                  element={
+                    <ProtectedRoute>
+                      <RouteBoundary routeName="Manage" fallback={<SkeletonCard />}>
+                        <Manage />
+                      </RouteBoundary>
+                    </ProtectedRoute>
+                  }
+                />
+                <Route path="*" element={<NotFound />} />
+              </Routes>
+            </div>
         </div>
 
         <ToastContainer />
