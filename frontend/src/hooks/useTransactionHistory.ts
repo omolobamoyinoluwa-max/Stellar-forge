@@ -118,7 +118,7 @@ export function useTransactionHistory(
     pageRef.current = page;
   }, [page]);
 
-  // Debounce on publicKey change
+  // Debounce re-fetch when publicKey or filter options change
   useEffect(() => {
     if (!publicKey) return
     if (debounceRef.current) clearTimeout(debounceRef.current)
@@ -126,10 +126,9 @@ export function useTransactionHistory(
       cursorRef.current = '';
       setPage(1);
       setTransactions([]);
-      fetchTransactions(true);
+      fetchRef.current(true);
     }, 400);
-    // eslint-disable-next-line
-  }, [publicKey]);
+  }, [publicKey, filterKey]);
 
   // Fetch on page change
   useEffect(() => {

@@ -2,12 +2,12 @@ import { renderHook, act } from '@testing-library/react'
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest'
 import { useTransactionHistory } from './useTransactionHistory'
 
-// Mutable so individual tests can override network
-const mockConfig = {
+// vi.mock is hoisted, so mockConfig must use vi.hoisted() to be available inside the factory
+const mockConfig = vi.hoisted(() => ({
   network: 'testnet' as 'testnet' | 'mainnet',
   testnet: { horizonUrl: 'https://horizon-testnet.stellar.org' },
   mainnet: { horizonUrl: 'https://horizon.stellar.org' },
-}
+}))
 
 vi.mock('../config/stellar', () => ({ STELLAR_CONFIG: mockConfig }))
 
@@ -180,7 +180,13 @@ describe('useTransactionHistory', () => {
       } as Response)
 
       const { result } = renderHook(() => useTransactionHistory(PUB))
-      act(() => { vi.advanceTimersByTime(400) })
+      // Advance the debounce timer and flush microtasks so fetch() resolves
+      // and resp.json() is called (setting resolveJson) before we invoke it
+      await act(async () => {
+        vi.advanceTimersByTime(400)
+        await Promise.resolve()
+        await Promise.resolve()
+      })
       expect(result.current.loading).toBe(true)
 
       await act(async () => {
