@@ -44,13 +44,15 @@ export const FeeDisplay: React.FC<FeeDisplayProps> = ({
     )
   }
 
-  const xlm = stroopsToXLM(feeType === 'base' ? state.baseFee : state.metadataFee)
+  const stroops = feeType === 'base' ? state.baseFee : state.metadataFee
+  const xlm = stroopsToXLM(stroops)
   const usdAmount = xlmUsdPrice !== null ? (xlm * xlmUsdPrice).toFixed(2) : null
 
   return (
     <span className={`text-sm text-gray-700 ${className}`}>
       {showLabel && `${label}: `}
-      {formatXLM(xlm)}
+      {/* formatXLM expects stroops, not the converted XLM value */}
+      {formatXLM(stroops)}
       {usdAmount !== null && <span className="text-gray-400 ml-1">≈ ${usdAmount} USD</span>}
     </span>
   )

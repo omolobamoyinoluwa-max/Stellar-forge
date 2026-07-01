@@ -5,6 +5,7 @@ import { Button } from './UI/Button'
 import { useToast } from '../context/ToastContext'
 import { useWalletContext } from '../context/WalletContext'
 import { useNetwork } from '../context/NetworkContext'
+import { useNetworkGuard } from '../hooks/useNetworkGuard'
 import { validateTokenParams } from '../utils/validation'
 import { logger } from '../utils/logger'
 import { FeeDisplay } from './FeeDisplay'
@@ -31,6 +32,7 @@ export const TokenForm: React.FC<TokenFormProps> = ({ onSubmit, isLoading = fals
   const { addToast } = useToast()
   const { wallet } = useWalletContext()
   const { network } = useNetwork()
+  const { blocked: networkBlocked, reason: networkReason } = useNetworkGuard()
 
   const [formData, setFormData] = useState({
     name: '',
@@ -207,9 +209,19 @@ export const TokenForm: React.FC<TokenFormProps> = ({ onSubmit, isLoading = fals
       </div>
 
       {/* Submit Button */}
-      <Button type="submit" disabled={!isFormValid() || isLoading} className="w-full">
+      <Button
+        type="submit"
+        disabled={!isFormValid() || isLoading || networkBlocked}
+        className="w-full"
+      >
         {isLoading ? t('tokenForm.deploying') : t('tokenForm.deploy')}
       </Button>
+
+      {networkBlocked && networkReason && (
+        <p className="text-sm text-red-600 dark:text-red-400 text-center" role="alert">
+          {networkReason}
+        </p>
+      )}
 
       {!wallet.isConnected && (
         <p className="text-sm text-amber-600 dark:text-amber-400 text-center">
