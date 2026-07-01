@@ -223,7 +223,7 @@ function AppContent() {
             <NavBar onHelpClick={() => setShowOnboarding(true)} isAdmin={isAdmin} />
           </div>
         </header>
-        <OnboardingModal forceOpen={showOnboarding} onClose={() => setShowOnboarding(false)} />
+        {showOnboarding && <OnboardingModal forceOpen onClose={() => setShowOnboarding(false)} />}
 
         {!isFactoryConfigured() && (
           <div
