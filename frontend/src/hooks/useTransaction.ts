@@ -9,6 +9,37 @@ export type TransactionStatus =
   | 'success'
   | 'error'
 
+// ── Reconciliation policy ───────────────────────────────────────────────────
+//
+// Every write-path component MUST follow this policy:
+//
+// 1. No optimistic cache mutation.
+//    Never add/update/remove entries in any shared cache (useTokens,
+//    useFactoryState, TokenDashboard, etc.) before the transaction is
+//    confirmed on-chain. A phantom entry that looks real but doesn't exist
+//    on the ledger is worse than a brief loading state.
+//
+// 2. Only call refresh() after a CONFIRMED success.
+//    The `onSuccess` callback (or equivalent) is the one place where
+//    caches should be invalidated. Listen for `status === 'success'` (not
+//    just "the promise resolved") and call refresh() / refetch() / re-run
+//    the relevant query hook.
+//
+// 3. On failure or timeout, do NOT mutate any cache.
+//    Show an error toast. If the transaction timed out, communicate
+//    uncertainty: "Transaction submitted but not yet confirmed — check
+//    the explorer for the final status." Never silently treat a timeout
+//    as either success or failure.
+//
+//    Timeout guards are the component's responsibility — wrap the
+//    builder call with Promise.race against a timeout and surface the
+//    uncertainty banner when the race is lost.
+//
+// 4. Prefer useTransaction over ad-hoc loading states.
+//    The hook centralises simulate → sign → submit → poll. Components
+//    that roll their own isDeploying / isSubmitting state bypass this
+//    lifecycle and risk drifting from the policy.
+
 export interface UseTransactionResult<T> {
   /** Run the transaction. Resolves with the result or throws on error. */
   execute: () => Promise<T>
