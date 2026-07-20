@@ -43,8 +43,8 @@ vi.mock('../config/stellar', () => ({
   },
 }))
 
-const TOKEN_A = makeTokenBatch(0, 1)[0]
-const TOKEN_B = makeTokenBatch(1, 1)[0]
+const TOKEN_A = makeTokenBatch(0, 1)[0]!
+const TOKEN_B = makeTokenBatch(1, 1)[0]!
 
 beforeEach(() => {
   vi.clearAllMocks()
@@ -97,9 +97,9 @@ describe('useTokens', () => {
     }))
 
     vi.mocked(stellarService.getTokensByCreator)
-      .mockResolvedValueOnce(fullBatch)    // offset 0  — full page, triggers concurrent batch
+      .mockResolvedValueOnce(fullBatch) // offset 0  — full page, triggers concurrent batch
       .mockResolvedValueOnce(partialBatch) // offset 50 — partial, signals end-of-data
-      .mockResolvedValue([])               // offsets 100, 150, … from concurrent batch → []
+      .mockResolvedValue([]) // offsets 100, 150, … from concurrent batch → []
 
     const { result } = renderHook(() => useTokens('GABC'))
 
@@ -169,7 +169,12 @@ describe('useTokens', () => {
 
     await waitFor(() => expect(result.current.totalCount).toBe(120))
     expect(stellarService.getContractEvents).toHaveBeenCalledTimes(2)
-    expect(stellarService.getContractEvents).toHaveBeenNthCalledWith(1, 'CFACTORY123', 100, undefined)
+    expect(stellarService.getContractEvents).toHaveBeenNthCalledWith(
+      1,
+      'CFACTORY123',
+      100,
+      undefined,
+    )
     expect(stellarService.getContractEvents).toHaveBeenNthCalledWith(
       2,
       'CFACTORY123',
@@ -242,10 +247,10 @@ describe('useTokens', () => {
   // the first is still pending.
   it('dispatches pages 2+ concurrently — does not await each page sequentially', async () => {
     const pageSize = 50
-    const page0 = makeTokenBatch(0, pageSize)   // full — signals more pages
-    const page1 = makeTokenBatch(50, pageSize)  // full — signals more pages
+    const page0 = makeTokenBatch(0, pageSize) // full — signals more pages
+    const page1 = makeTokenBatch(50, pageSize) // full — signals more pages
     const page2 = makeTokenBatch(100, pageSize) // full — signals more pages
-    const page3 = makeTokenBatch(150, 10)       // short — terminal page
+    const page3 = makeTokenBatch(150, 10) // short — terminal page
 
     // Deferred handles for pages 1, 2, and 3 (page 0 resolves immediately).
     const d1 = deferred<typeof page1>()
@@ -340,12 +345,14 @@ describe('useTokens LRU cache eviction', () => {
     const firstCreator = 'GCREATOR0000'
     vi.mocked(stellarService.getTokensByCreator).mockResolvedValue([TOKEN_A])
     vi.mocked(stellarService.getTokensByCreator).mockClear()
-    const { result: firstResult, unmount: unmountFirst } = renderHook(() =>
-      useTokens(firstCreator),
-    )
+    const { result: firstResult, unmount: unmountFirst } = renderHook(() => useTokens(firstCreator))
     await waitFor(() => expect(firstResult.current.isLoading).toBe(false))
     // Cache miss — RPC was called
-    expect(stellarService.getTokensByCreator).toHaveBeenCalledWith(firstCreator, 0, expect.any(Number))
+    expect(stellarService.getTokensByCreator).toHaveBeenCalledWith(
+      firstCreator,
+      0,
+      expect.any(Number),
+    )
     unmountFirst()
   })
 
@@ -398,7 +405,11 @@ describe('useTokens LRU cache eviction', () => {
       useTokens(evictedCreator),
     )
     await waitFor(() => expect(evictedResult.current.isLoading).toBe(false))
-    expect(stellarService.getTokensByCreator).toHaveBeenCalledWith(evictedCreator, 0, expect.any(Number))
+    expect(stellarService.getTokensByCreator).toHaveBeenCalledWith(
+      evictedCreator,
+      0,
+      expect.any(Number),
+    )
     unmountEvicted()
   })
 })

@@ -96,17 +96,14 @@ const CONCURRENT_PAGE_LIMIT = 5
  * Run an array of async thunks with a bounded concurrency window.
  * Results are returned in the same order as `tasks`.
  */
-async function runConcurrent<T>(
-  tasks: Array<() => Promise<T>>,
-  limit: number,
-): Promise<T[]> {
+async function runConcurrent<T>(tasks: Array<() => Promise<T>>, limit: number): Promise<T[]> {
   const results: T[] = new Array(tasks.length)
   let nextIndex = 0
 
   async function worker() {
     while (nextIndex < tasks.length) {
       const i = nextIndex++
-      results[i] = await tasks[i]()
+      results[i] = await tasks[i]!()
     }
   }
 
