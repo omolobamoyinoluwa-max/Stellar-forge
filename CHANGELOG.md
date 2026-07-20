@@ -1,3 +1,10 @@
+# [1.1.0](https://github.com/Favourorg/Stellar-forge/compare/v1.0.0...v1.1.0) (2026-07-20)
+
+
+### Features
+
+* **security:** add triage and waiver workflow for audit findings ([#981](https://github.com/Favourorg/Stellar-forge/issues/981)) ([aa0ceab](https://github.com/Favourorg/Stellar-forge/commit/aa0ceab6d134bb7706f4bdb03f4e591bc5eba1ee)), closes [hi#or-above](https://github.com/hi/issues/or-above) [#939](https://github.com/Favourorg/Stellar-forge/issues/939)
+
 # 1.0.0 (2026-07-20)
 
 
