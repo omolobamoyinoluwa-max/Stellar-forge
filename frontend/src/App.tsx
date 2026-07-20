@@ -19,7 +19,7 @@ import { NetworkSwitcher } from './components/NetworkSwitcher'
 import { LanguageSwitcher } from './components/LanguageSwitcher'
 import { FundbotButton } from './components/FundbotButton'
 import { useWallet } from './hooks/useWallet'
-import { truncateAddress, formatXLM } from './utils/formatting'
+import { truncateAddress } from './utils/formatting'
 import { NavBar } from './components/NavBar'
 import { Home } from './components/Home'
 import { CreateToken } from './components/CreateToken'
@@ -232,7 +232,9 @@ function AppContent() {
                       {truncateAddress(wallet.address)}
                     </span>
                     {wallet.balance && (
-                      <span className="shrink-0">{formatXLM(wallet.balance)}</span>
+                      // wallet.balance is Horizon's decimal XLM string, not stroops —
+                      // formatXLM would throw (BigInt on a decimal) and crash the app.
+                      <span className="shrink-0">{wallet.balance} XLM</span>
                     )}
                   </div>
                 )}
