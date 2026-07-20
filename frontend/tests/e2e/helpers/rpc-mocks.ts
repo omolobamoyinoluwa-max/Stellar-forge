@@ -8,7 +8,8 @@ import { Address, nativeToScVal, xdr } from 'stellar-sdk'
  */
 function buildMockFactoryState(factoryAddress: string, tokenCount: number = 5) {
   const admin = Address.fromString(factoryAddress) // or a test address
-  const treasury = Address.fromString('G...TREASURY') // use a fixed test address
+  // Deterministic test address (Keypair.fromRawEd25519Seed of 0x02 bytes).
+  const treasury = Address.fromString('GCATS5YOVB6ROX2WUNKGNQ2MP3GMXDMKSG2O4N5CLX3A6W4PZGZZI55U')
 
   const entries = [
     new xdr.ScMapEntry({
@@ -68,7 +69,9 @@ function buildMockEvents(factoryAddress: string, tokenAddress: string) {
       data: {
         value: {
           token: Address.fromString(tokenAddress).toScVal().toXDR('base64'),
-          owner: Address.fromString('G...OWNER').toScVal().toXDR('base64'),
+          owner: Address.fromString('GCATS5YOVB6ROX2WUNKGNQ2MP3GMXDMKSG2O4N5CLX3A6W4PZGZZI55U')
+            .toScVal()
+            .toXDR('base64'),
           // ... other fields as needed
         },
       },
@@ -90,11 +93,12 @@ export async function mockSorobanRpc(
   tokenCount: number = 5,
 ) {
   // Determine the RPC URL from your config – you can hardcode or read from localStorage.
-  const appNetwork = await page.evaluate(
-    () => localStorage.getItem('stellarforge_network') || 'TESTNET',
+  // NetworkContext stores the network JSON-encoded (e.g. '"testnet"').
+  const appNetwork = await page.evaluate(() =>
+    (localStorage.getItem('stellarforge_network') || 'testnet').replace(/"/g, ''),
   )
   const rpcUrl =
-    appNetwork === 'TESTNET'
+    appNetwork.toLowerCase() === 'testnet'
       ? 'https://soroban-testnet.stellar.org'
       : 'https://soroban-mainnet.stellar.org'
 
@@ -107,7 +111,6 @@ export async function mockSorobanRpc(
     }
 
     const method = postData.method
-    const params = postData.params
     const id = postData.id
 
     if (method === 'simulateTransaction') {
